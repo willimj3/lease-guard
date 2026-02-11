@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeaseGuard — Residential Lease Risk Assessment</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --color-bg: #f4f6f9;
+      --color-surface: #ffffff;
+      --color-primary: #1a56db;
+      --color-primary-hover: #1443b0;
+      --color-text: #1f2937;
+      --color-text-muted: #6b7280;
+      --color-border: #e5e7eb;
+      --color-accent: #eef2ff;
+      --radius: 10px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      background: var(--color-primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo svg {
+      width: 20px;
+      height: 20px;
+      fill: #fff;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand span {
+      color: var(--color-primary);
+    }
+
+    main {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.4px;
+    }
+
+    .hero p {
+      color: var(--color-text-muted);
+      font-size: 16px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 28px;
+    }
+
+    .input-section label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .input-section textarea {
+      width: 100%;
+      height: 320px;
+      padding: 14px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.7;
+      resize: vertical;
+      color: var(--color-text);
+      background: var(--color-bg);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-section textarea::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .input-section textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.15);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      gap: 12px;
+    }
+
+    .char-count {
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    .btn-analyze {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-analyze:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-analyze:active {
+      transform: scale(0.98);
+    }
+
+    .btn-analyze:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-analyze svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    #results {
+      margin-top: 28px;
+      display: none;
+    }
+
+    #results .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.2px;
+    }
+
+    #results-content {
+      min-height: 60px;
+    }
+
+    .placeholder-msg {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--color-text-muted);
+      font-size: 14px;
+    }
+
+    /* --- Summary bar --- */
+    .summary-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .summary-stat {
+      flex: 1;
+      min-width: 140px;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-stat.high   { background: #fef2f2; border: 1px solid #fecaca; }
+    .summary-stat.medium { background: #fffbeb; border: 1px solid #fde68a; }
+    .summary-stat.low    { background: #f0fdf4; border: 1px solid #bbf7d0; }
+
+    .summary-stat .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .summary-stat.high .stat-value   { color: #dc2626; }
+    .summary-stat.medium .stat-value { color: #d97706; }
+    .summary-stat.low .stat-value    { color: #16a34a; }
+
+    .summary-stat .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    .overall-score {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .overall-score.score-good   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .overall-score.score-fair   { background: #fffbeb; color: #a16207; border: 1px solid #fde68a; }
+    .overall-score.score-poor   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+    /* --- Risk items --- */
+    .risk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .risk-item {
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .risk-item-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+    }
+
+    .risk-item-header:hover {
+      background: var(--color-bg);
+    }
+
+    .severity-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+    }
+
+    .severity-badge.high   { background: #fee2e2; color: #b91c1c; }
+    .severity-badge.medium { background: #fef3c7; color: #92400e; }
+
+    .risk-item-title {
+      font-weight: 600;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .risk-item-chevron {
+      width: 18px;
+      height: 18px;
+      fill: var(--color-text-muted);
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .risk-item.open .risk-item-chevron {
+      transform: rotate(180deg);
+    }
+
+    .risk-item-body {
+      display: none;
+      padding: 0 16px 16px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .risk-item.open .risk-item-body {
+      display: block;
+    }
+
+    .risk-item-body p {
+      margin-bottom: 10px;
+      color: var(--color-text-muted);
+    }
+
+    .matched-text {
+      background: #fefce8;
+      border-left: 3px solid #eab308;
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--color-text);
+      word-break: break-word;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .matched-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--color-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .no-issues {
+      text-align: center;
+      padding: 40px 20px;
+      color: #16a34a;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .no-issues svg {
+      width: 40px;
+      height: 40px;
+      fill: #16a34a;
+      display: block;
+      margin: 0 auto 12px;
+    }
+
+    /* --- Drop zone --- */
+    .dropzone {
+      border: 2px dashed var(--color-border);
+      border-radius: 10px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      margin-bottom: 8px;
+    }
+
+    .dropzone:hover {
+      border-color: var(--color-primary);
+      background: var(--color-accent);
+    }
+
+    .dropzone.drag-over {
+      border-color: var(--color-primary);
+      background: var(--color-accent);
+      border-style: solid;
+    }
+
+    .dropzone.processing {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .dropzone-icon {
+      width: 40px;
+      height: 40px;
+      fill: var(--color-text-muted);
+      margin: 0 auto 10px;
+      display: block;
+    }
+
+    .dropzone:hover .dropzone-icon,
+    .dropzone.drag-over .dropzone-icon {
+      fill: var(--color-primary);
+    }
+
+    .dropzone-text {
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .dropzone-text strong {
+      color: var(--color-primary);
+    }
+
+    .dropzone-hint {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      margin-top: 6px;
+      opacity: 0.75;
+    }
+
+    .dropzone-spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: dz-spin 0.7s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes dz-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--color-accent);
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .file-info svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .file-info-name {
+      flex: 1;
+      font-weight: 600;
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-info-size {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .file-info-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      line-height: 1;
+      color: var(--color-text-muted);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .file-info-remove:hover {
+      color: #dc2626;
+    }
+
+    .input-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 12px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-divider::before,
+    .input-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--color-border);
+    }
+
+    .upload-error {
+      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #dc2626;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    /* --- AI button --- */
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-ai {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, opacity 0.15s;
+    }
+
+    .btn-ai:hover {
+      background: linear-gradient(135deg, #6d28d9, #5b21b6);
+    }
+
+    .btn-ai:active {
+      transform: scale(0.98);
+    }
+
+    .btn-ai:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ai svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* --- AI results panel --- */
+    #ai-results {
+      margin-top: 28px;
+      display: none;
+    }
+
+    #ai-results .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ai-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff;
+    }
+
+    .ai-loading {
+      text-align: center;
+      padding: 48px 20px;
+    }
+
+    .ai-loading .ai-spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--color-border);
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: dz-spin 0.7s linear infinite;
+      margin-bottom: 14px;
+    }
+
+    .ai-loading p {
+      color: var(--color-text-muted);
+      font-size: 14px;
+    }
+
+    .ai-error {
+      padding: 14px 18px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #dc2626;
+      font-size: 14px;
+    }
+
+    .ai-response {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--color-text);
+    }
+
+    .ai-response h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 24px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .ai-response h2:first-child {
+      margin-top: 0;
+    }
+
+    .ai-response h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 18px 0 6px;
+    }
+
+    .ai-response p {
+      margin: 8px 0;
+    }
+
+    .ai-response blockquote {
+      margin: 10px 0;
+      padding: 10px 16px;
+      background: #fefce8;
+      border-left: 3px solid #eab308;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: var(--color-text);
+    }
+
+    .ai-response ul, .ai-response ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+
+    .ai-response li {
+      margin: 4px 0;
+    }
+
+    .ai-response strong {
+      font-weight: 700;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/>
+      </svg>
+    </div>
+    <div class="brand">Lease<span>Guard</span></div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Residential Lease Risk Assessment</h1>
+      <p>Paste your lease agreement below and get an instant analysis of potential risks, unusual clauses, and key terms.</p>
+    </div>
+
+    <div class="card">
+      <div class="input-section">
+        <input type="file" id="file-input" accept=".txt,.pdf,.docx" hidden>
+
+        <div class="dropzone" id="dropzone">
+          <svg class="dropzone-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+          </svg>
+          <div class="dropzone-text">Drag a lease file here or <strong>click to browse</strong></div>
+          <div class="dropzone-hint">Accepts .txt, .pdf, and .docx files</div>
+        </div>
+
+        <div id="file-info" style="display:none"></div>
+        <div id="upload-error" style="display:none"></div>
+
+        <div class="input-divider">or paste text directly</div>
+
+        <label for="lease-input">Lease Agreement Text</label>
+        <textarea
+          id="lease-input"
+          placeholder="Paste the full text of your residential lease agreement here..."
+        ></textarea>
+      </div>
+
+      <div class="toolbar">
+        <span class="char-count" id="char-count">0 characters</span>
+        <div class="btn-group">
+          <button class="btn-analyze" id="analyze-btn" disabled>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10
+                       10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8
+                       8-8 8 3.59 8 8-3.59 8-8 8z"/>
+            </svg>
+            Analyze Lease
+          </button>
+          <button class="btn-ai" id="ai-analyze-btn" disabled>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5
+                       1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            AI Deep Analysis
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="results" class="card">
+      <div class="section-title">Risk Assessment Report</div>
+      <div id="results-content"></div>
+    </div>
+
+    <div id="ai-results" class="card">
+      <div class="section-title">AI Deep Analysis <span class="ai-badge">Claude</span></div>
+      <div id="ai-results-content"></div>
+    </div>
+  </main>
+
+  <footer>LeaseGuard &mdash; For informational purposes only. Not legal advice.</footer>
+
+  <script type="module">
+    // ── PDF.js setup ──────────────────────────────────────────────────
+    const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+    // ── DOM refs ──────────────────────────────────────────────────────
+    const textarea      = document.getElementById("lease-input");
+    const charCount     = document.getElementById("char-count");
+    const analyzeBtn    = document.getElementById("analyze-btn");
+    const resultsPanel  = document.getElementById("results");
+    const resultsContent = document.getElementById("results-content");
+    const dropzone      = document.getElementById("dropzone");
+    const fileInput     = document.getElementById("file-input");
+    const fileInfoEl    = document.getElementById("file-info");
+    const uploadErrorEl  = document.getElementById("upload-error");
+    const aiAnalyzeBtn   = document.getElementById("ai-analyze-btn");
+    const aiResultsPanel = document.getElementById("ai-results");
+    const aiResultsContent = document.getElementById("ai-results-content");
+
+    function updateCharCount() {
+      const len = textarea.value.length;
+      charCount.textContent = len.toLocaleString() + " character" + (len !== 1 ? "s" : "");
+      analyzeBtn.disabled = len === 0;
+      aiAnalyzeBtn.disabled = len === 0;
+    }
+
+    textarea.addEventListener("input", updateCharCount);
+
+    // ── Helpers ───────────────────────────────────────────────────────
+    function escapeHtml(str) {
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(1) + " MB";
+    }
+
+    function showError(msg) {
+      uploadErrorEl.className = "upload-error";
+      uploadErrorEl.textContent = msg;
+      uploadErrorEl.style.display = "block";
+      fileInfoEl.style.display = "none";
+    }
+
+    function clearError() {
+      uploadErrorEl.style.display = "none";
+    }
+
+    function showFileInfo(name, size) {
+      fileInfoEl.style.display = "flex";
+      fileInfoEl.className = "file-info";
+      fileInfoEl.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zm-3 12v-4h4v4h3l-5 5-5-5h3z"/></svg>' +
+        '<span class="file-info-name">' + escapeHtml(name) + '</span>' +
+        '<span class="file-info-size">' + formatBytes(size) + '</span>' +
+        '<button class="file-info-remove" title="Remove file">&times;</button>';
+
+      fileInfoEl.querySelector(".file-info-remove").addEventListener("click", function() {
+        fileInfoEl.style.display = "none";
+        fileInput.value = "";
+      });
+    }
+
+    function setDropzoneProcessing(active) {
+      if (active) {
+        dropzone.classList.add("processing");
+        dropzone.innerHTML =
+          '<div class="dropzone-spinner"></div>' +
+          '<div class="dropzone-text">Extracting text&hellip;</div>';
+      } else {
+        dropzone.classList.remove("processing");
+        dropzone.innerHTML =
+          '<svg class="dropzone-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>' +
+          '</svg>' +
+          '<div class="dropzone-text">Drag a lease file here or <strong>click to browse</strong></div>' +
+          '<div class="dropzone-hint">Accepts .txt, .pdf, and .docx files</div>';
+      }
+    }
+
+    // ── File text extraction ──────────────────────────────────────────
+    async function extractText(file) {
+      const name = file.name.toLowerCase();
+
+      if (name.endsWith(".txt")) {
+        return await file.text();
+      }
+
+      if (name.endsWith(".pdf")) {
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        const pages = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items.map(function(item) { return item.str; }).join(" "));
+        }
+        return pages.join("\n\n");
+      }
+
+      if (name.endsWith(".docx")) {
+        const buffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+        return result.value;
+      }
+
+      throw new Error("Unsupported file type. Please use .txt, .pdf, or .docx files.");
+    }
+
+    async function handleFile(file) {
+      if (!file) return;
+
+      const validExts = [".txt", ".pdf", ".docx"];
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+      if (!validExts.includes(ext)) {
+        showError("Unsupported file type \"" + ext + "\". Please upload a .txt, .pdf, or .docx file.");
+        return;
+      }
+
+      clearError();
+      setDropzoneProcessing(true);
+
+      try {
+        const text = await extractText(file);
+        if (!text || !text.trim()) {
+          showError("No readable text was found in this file. The document may be scanned or image-based.");
+          setDropzoneProcessing(false);
+          return;
+        }
+        textarea.value = text;
+        updateCharCount();
+        showFileInfo(file.name, file.size);
+      } catch (err) {
+        showError("Failed to extract text: " + err.message);
+      }
+
+      setDropzoneProcessing(false);
+    }
+
+    // ── Drag-and-drop events ──────────────────────────────────────────
+    dropzone.addEventListener("click", function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function() {
+      if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+    });
+
+    dropzone.addEventListener("dragenter", function(e) {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    });
+
+    dropzone.addEventListener("dragover", function(e) {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    });
+
+    dropzone.addEventListener("dragleave", function(e) {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+    });
+
+    dropzone.addEventListener("drop", function(e) {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+
+    // Prevent full-page drop from navigating away
+    document.addEventListener("dragover", function(e) { e.preventDefault(); });
+    document.addEventListener("drop", function(e) { e.preventDefault(); });
+
+    // ── Risk rule definitions ──────────────────────────────────────────
+    const rules = [
+      {
+        id: "late-fees",
+        title: "Excessive Late Fees",
+        severity: "high",
+        description: "Late fees exceeding 5% of monthly rent may be considered excessive and are restricted or unenforceable in many jurisdictions.",
+        patterns: [
+          /late\s+(?:fee|charge|penalty)[\s\S]{0,120}?(\b(?:[6-9]|[1-9]\d)\s*%)/i,
+          /(\b(?:[6-9]|[1-9]\d)\s*%)[\s\S]{0,80}?(?:late\s+(?:fee|charge|penalty))/i,
+          /late\s+(?:fee|charge|penalty)[\s\S]{0,120}?(\$\s*\d{3,})/i,
+          /late\s+(?:fee|charge|penalty)[\s\S]{0,80}?(10\s*percent|fifteen\s*percent|twenty\s*percent|ten\s*percent)/i,
+        ],
+      },
+      {
+        id: "entry-notice",
+        title: "Insufficient Entry Notice",
+        severity: "high",
+        description: "Most jurisdictions require landlords to provide at least 24 hours' written notice before entering the premises, except in genuine emergencies.",
+        patterns: [
+          /(?:enter|access|entry|inspect)[\s\S]{0,150}?(?:without\s+(?:prior\s+)?notice|without\s+(?:advance\s+)?notice|at\s+any\s+time|any\s+time\s+without)/i,
+          /(?:enter|access|entry|inspect)[\s\S]{0,120}?(?:immediate(?:ly)?|no\s+(?:prior\s+)?notice|zero[\s-]?notice)/i,
+          /(?:right|rights|reserves?\s+the\s+right)\s+to\s+enter[\s\S]{0,100}?(?:without|at\s+any\s+time|unrestricted)/i,
+          /(?:enter|access|entry)[\s\S]{0,100}?(?:\b(?:2|4|6|8|12)\s*(?:hour|hr)s?\b)/i,
+        ],
+      },
+      {
+        id: "all-repairs",
+        title: "Tenant Responsible for All Repairs",
+        severity: "high",
+        description: "Clauses making the tenant responsible for all repairs, including structural ones, shift the landlord's fundamental maintenance obligations onto the tenant.",
+        patterns: [
+          /tenant[\s\S]{0,100}?(?:responsible|liable|obligation)[\s\S]{0,80}?(?:all\s+(?:repairs|maintenance)|structural)/i,
+          /(?:all\s+(?:repairs|maintenance))[\s\S]{0,100}?(?:tenant'?s?\s+(?:responsibility|obligation|expense|cost))/i,
+          /tenant[\s\S]{0,80}?(?:shall|will|must)[\s\S]{0,60}?(?:maintain|repair)[\s\S]{0,80}?(?:structural|foundation|roof|load[- ]?bearing)/i,
+          /(?:repairs?\s+(?:and|or)\s+maintenance)[\s\S]{0,80}?(?:sole(?:ly)?\s+(?:responsibility|expense|cost)\s+of\s+(?:the\s+)?tenant)/i,
+        ],
+      },
+      {
+        id: "security-deposit",
+        title: "Excessive Security Deposit",
+        severity: "medium",
+        description: "Security deposits exceeding two months' rent are prohibited in many states and can impose an unfair financial burden on tenants.",
+        patterns: [
+          /(?:security\s+deposit|deposit)[\s\S]{0,120}?(?:three|four|five|3|4|5)\s*months?(?:'?\s*(?:rent|rental))?/i,
+          /(?:three|four|five|3|4|5)\s*months?(?:'?\s*(?:rent|rental))?[\s\S]{0,60}?(?:security\s+deposit|deposit)/i,
+          /(?:security\s+deposit|deposit)[\s\S]{0,80}?(?:equal\s+to|equivalent\s+to|amount\s+of)[\s\S]{0,40}?(?:three|four|five|3|4|5)/i,
+        ],
+      },
+      {
+        id: "auto-renewal",
+        title: "Auto-Renewal with Short Opt-Out Window",
+        severity: "medium",
+        description: "Auto-renewal clauses with fewer than 30 days to opt out can trap tenants in unwanted lease extensions if they miss the narrow window.",
+        patterns: [
+          /(?:auto(?:matic(?:ally)?)?[\s-]?renew|renew(?:s|ed|al)\s+auto)[\s\S]{0,180}?(?:\b(?:[1-9]|1\d|2\d)\s*(?:day|calendar\s+day|business\s+day)s?\b)[\s\S]{0,60}?(?:notice|opt[\s-]?out|cancel|terminat)/i,
+          /(?:auto(?:matic(?:ally)?)?[\s-]?renew|renew(?:s|ed|al)\s+auto)[\s\S]{0,180}?(?:(?:seven|fourteen|fifteen|twenty|ten|seven[\s-]?day|fourteen[\s-]?day|fifteen[\s-]?day|twenty[\s-]?day)\s*(?:days?\s*)?(?:notice|opt|cancel|terminat|prior\s+to))/i,
+          /(?:notice|opt[\s-]?out|cancel|terminat)[\s\S]{0,60}?(?:\b(?:[1-9]|1\d|2\d)\s*(?:day|calendar\s+day)s?\b)[\s\S]{0,120}?(?:auto(?:matic(?:ally)?)?[\s-]?renew)/i,
+        ],
+      },
+      {
+        id: "indemnification",
+        title: "Broad Indemnification / Hold-Harmless Clause",
+        severity: "high",
+        description: "Overly broad indemnification clauses can make the tenant liable for injuries, damages, or losses — even those caused by the landlord's own negligence.",
+        patterns: [
+          /(?:tenant|lessee|resident)[\s\S]{0,80}?(?:shall|agrees?\s+to|will|must|hereby)[\s\S]{0,40}?(?:indemnif|hold[\s\S]{0,10}?harmless)/i,
+          /(?:indemnif|hold[\s\S]{0,10}?harmless)[\s\S]{0,150}?(?:any\s+and\s+all|all\s+claims|all\s+losses|all\s+damages|all\s+liabilit|regardless\s+of\s+cause|whether\s+or\s+not)/i,
+          /(?:indemnif|hold[\s\S]{0,10}?harmless)[\s\S]{0,150}?(?:including[\s\S]{0,40}?(?:negligence|fault|acts?\s+or\s+omission)[\s\S]{0,40}?(?:landlord|lessor|owner))/i,
+          /(?:tenant|lessee|resident)[\s\S]{0,40}?(?:waive|release|relinquish)[\s\S]{0,80}?(?:claim|right|cause\s+of\s+action)[\s\S]{0,60}?(?:landlord|lessor|owner)/i,
+        ],
+      },
+      {
+        id: "jury-waiver",
+        title: "Jury Trial Waiver / Mandatory Arbitration",
+        severity: "high",
+        description: "Waiving the right to a jury trial or requiring mandatory arbitration limits a tenant's legal remedies and may bias dispute resolution in the landlord's favor.",
+        patterns: [
+          /waiv(?:e|er|es|ing)[\s\S]{0,60}?(?:right\s+to\s+(?:a\s+)?(?:jury\s+)?trial|jury\s+trial|trial\s+by\s+jury)/i,
+          /(?:mandatory|binding|compulsory)\s+(?:arbitration|mediation)/i,
+          /(?:agree|consent|submit)[\s\S]{0,40}?(?:to\s+)?(?:binding\s+)?arbitration/i,
+          /(?:disputes?|claims?|controversies?)[\s\S]{0,100}?(?:(?:shall|will|must)\s+be\s+(?:resolved|settled|determined|decided)\s+(?:by|through)\s+(?:binding\s+)?arbitration)/i,
+          /(?:jury\s+trial\s+waiver|waiver\s+of\s+jury)/i,
+        ],
+      },
+      {
+        id: "non-refundable-fees",
+        title: "Non-Refundable Fees Beyond Application Fees",
+        severity: "medium",
+        description: "Non-refundable fees (other than standard application fees) can disguise extra costs that tenants cannot recover, and may be restricted by local law.",
+        patterns: [
+          /non[\s-]?refundable[\s\S]{0,60}?(?:fee|charge|deposit|payment|amount)/i,
+          /(?:fee|charge|deposit|payment)[\s\S]{0,60}?(?:non[\s-]?refundable|shall\s+not\s+be\s+refund|will\s+not\s+be\s+refund|is\s+not\s+refundable)/i,
+        ],
+        exclude: /non[\s-]?refundable[\s\S]{0,30}?application\s+fee/i,
+      },
+      {
+        id: "termination-penalty",
+        title: "Excessive Early Termination Penalty",
+        severity: "medium",
+        description: "Early termination penalties exceeding two months' rent can financially trap tenants in unsuitable living situations.",
+        patterns: [
+          /(?:early\s+)?terminat[\s\S]{0,120}?(?:(?:three|four|five|six|3|4|5|6)\s*months?(?:'?\s*(?:rent|rental))?)/i,
+          /(?:(?:three|four|five|six|3|4|5|6)\s*months?(?:'?\s*(?:rent|rental))?)[\s\S]{0,80}?(?:early\s+)?terminat/i,
+          /(?:early\s+)?terminat[\s\S]{0,100}?(?:penalty|fee|charge|liquidated\s+damages)[\s\S]{0,80}?(?:remaining\s+(?:balance|rent)|all\s+remaining|remainder\s+of\s+(?:the\s+)?lease)/i,
+          /(?:break|cancel)[\s\S]{0,30}?(?:lease|agreement)[\s\S]{0,100}?(?:(?:three|four|five|six|3|4|5|6)\s*months?|forfeit|remaining\s+rent|balance\s+of)/i,
+        ],
+      },
+      {
+        id: "change-terms",
+        title: "Landlord Can Change Terms with Insufficient Notice",
+        severity: "high",
+        description: "Clauses allowing the landlord to unilaterally modify lease terms with fewer than 30 days' notice undermine the tenant's right to predictable, agreed-upon conditions.",
+        patterns: [
+          /(?:landlord|lessor|owner|management)[\s\S]{0,80}?(?:may|can|reserves?\s+the\s+right\s+to|right\s+to)[\s\S]{0,60}?(?:modify|change|alter|amend|revise|update)[\s\S]{0,60}?(?:terms|rules|policies|conditions|provisions|agreement)/i,
+          /(?:modify|change|alter|amend|revise|update)[\s\S]{0,60}?(?:terms|rules|policies|conditions|provisions)[\s\S]{0,120}?(?:\b(?:[1-9]|1\d|2\d)\s*(?:day|calendar\s+day)s?\b)[\s\S]{0,40}?notice/i,
+          /(?:modify|change|alter|amend)[\s\S]{0,60}?(?:terms|rules|policies|conditions)[\s\S]{0,80}?(?:at\s+(?:any\s+time|(?:its?|their)\s+(?:sole\s+)?discretion)|without\s+(?:prior\s+)?notice|unilateral)/i,
+          /(?:rules\s+and\s+regulations|community\s+(?:rules|policies))[\s\S]{0,100}?(?:(?:may|can)\s+be\s+(?:changed|modified|amended|updated))[\s\S]{0,60}?(?:at\s+any\s+time|without\s+(?:prior\s+)?notice|\b(?:[1-9]|1\d|2\d)\s*days?\b)/i,
+        ],
+      },
+    ];
+
+    // ── Extract a surrounding snippet from the lease text ──────────────
+    function extractSnippet(text, match, contextChars) {
+      contextChars = contextChars || 80;
+      var idx = text.toLowerCase().indexOf(match.toLowerCase());
+      if (idx === -1) idx = 0;
+      var start = Math.max(0, idx - contextChars);
+      var end = Math.min(text.length, idx + match.length + contextChars);
+      var snippet = "";
+      if (start > 0) snippet += "...";
+      snippet += text.slice(start, end).replace(/\s+/g, " ");
+      if (end < text.length) snippet += "...";
+      return snippet;
+    }
+
+    // ── Run analysis ──────────────────────────────────────────────────
+    function analyzeLease(text) {
+      var findings = [];
+
+      rules.forEach(function(rule) {
+        for (var i = 0; i < rule.patterns.length; i++) {
+          var m = text.match(rule.patterns[i]);
+          if (m) {
+            // Check exclusion pattern
+            if (rule.exclude && rule.exclude.test(m[0])) continue;
+
+            findings.push({
+              id: rule.id,
+              title: rule.title,
+              severity: rule.severity,
+              description: rule.description,
+              matchedText: extractSnippet(text, m[0], 80),
+            });
+            break; // one match per rule is enough
+          }
+        }
+      });
+
+      return findings;
+    }
+
+    // ── Render results ────────────────────────────────────────────────
+    function renderResults(findings) {
+      var highCount = findings.filter(function(f){ return f.severity === "high"; }).length;
+      var medCount  = findings.filter(function(f){ return f.severity === "medium"; }).length;
+      var passCount = rules.length - findings.length;
+
+      // Overall score
+      var scoreClass, scoreLabel;
+      if (highCount >= 3) {
+        scoreClass = "score-poor";
+        scoreLabel = "High Risk \u2014 This lease contains multiple concerning provisions. Consider negotiating changes or seeking legal advice.";
+      } else if (highCount >= 1 || medCount >= 3) {
+        scoreClass = "score-fair";
+        scoreLabel = "Moderate Risk \u2014 Some provisions may be unfavorable. Review the flagged items carefully before signing.";
+      } else if (medCount >= 1) {
+        scoreClass = "score-fair";
+        scoreLabel = "Low\u2013Moderate Risk \u2014 A few areas deserve attention, but no critical issues were detected.";
+      } else {
+        scoreClass = "score-good";
+        scoreLabel = "Low Risk \u2014 No common tenant-unfriendly provisions were detected. Always read the full agreement carefully.";
+      }
+
+      var html = "";
+
+      // Summary bar
+      html += '<div class="summary-bar">';
+      html += '<div class="summary-stat high"><div class="stat-value">' + highCount + '</div><div class="stat-label">High Severity</div></div>';
+      html += '<div class="summary-stat medium"><div class="stat-value">' + medCount + '</div><div class="stat-label">Medium Severity</div></div>';
+      html += '<div class="summary-stat low"><div class="stat-value">' + passCount + '</div><div class="stat-label">Passed</div></div>';
+      html += '</div>';
+
+      // Overall score
+      html += '<div class="overall-score ' + scoreClass + '">' + escapeHtml(scoreLabel) + '</div>';
+
+      if (findings.length === 0) {
+        html += '<div class="no-issues">';
+        html += '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>';
+        html += 'No flagged provisions found across all 10 checks.';
+        html += '</div>';
+      } else {
+        html += '<div class="risk-list">';
+        findings.forEach(function(f, idx) {
+          html += '<div class="risk-item" id="risk-' + idx + '">';
+          html += '  <div class="risk-item-header" onclick="toggleRisk(' + idx + ')">';
+          html += '    <span class="severity-badge ' + f.severity + '">' + f.severity + '</span>';
+          html += '    <span class="risk-item-title">' + escapeHtml(f.title) + '</span>';
+          html += '    <svg class="risk-item-chevron" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>';
+          html += '  </div>';
+          html += '  <div class="risk-item-body">';
+          html += '    <p>' + escapeHtml(f.description) + '</p>';
+          html += '    <div class="matched-label">Matched Text</div>';
+          html += '    <div class="matched-text">' + escapeHtml(f.matchedText) + '</div>';
+          html += '  </div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      return html;
+    }
+
+    window.toggleRisk = function(idx) {
+      document.getElementById("risk-" + idx).classList.toggle("open");
+    };
+
+    // ── Button handler ────────────────────────────────────────────────
+    analyzeBtn.addEventListener("click", function() {
+      var text = textarea.value.trim();
+      if (!text) return;
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Analyzing\u2026';
+
+      setTimeout(function() {
+        var findings = analyzeLease(text);
+        resultsContent.innerHTML = renderResults(findings);
+        resultsPanel.style.display = "block";
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg> Analyze Lease';
+        resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 400);
+    });
+
+    // ── Simple markdown → HTML renderer ──────────────────────────────
+    function renderMarkdown(md) {
+      var lines = md.split("\n");
+      var html = "";
+      var inUl = false;
+      var inOl = false;
+      var inBlockquote = false;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+
+        // Close open lists/blockquotes if the line doesn't continue them
+        if (inBlockquote && !/^>\s?/.test(line)) {
+          html += "</blockquote>";
+          inBlockquote = false;
+        }
+        if (inUl && !/^\s*[-*]\s/.test(line)) {
+          html += "</ul>";
+          inUl = false;
+        }
+        if (inOl && !/^\s*\d+\.\s/.test(line)) {
+          html += "</ol>";
+          inOl = false;
+        }
+
+        // Blank line
+        if (!line.trim()) {
+          continue;
+        }
+
+        // Headings
+        if (/^### (.+)/.test(line)) {
+          html += "<h3>" + inlineFormat(line.replace(/^### /, "")) + "</h3>";
+          continue;
+        }
+        if (/^## (.+)/.test(line)) {
+          html += "<h2>" + inlineFormat(line.replace(/^## /, "")) + "</h2>";
+          continue;
+        }
+        if (/^# (.+)/.test(line)) {
+          html += "<h2>" + inlineFormat(line.replace(/^# /, "")) + "</h2>";
+          continue;
+        }
+
+        // Blockquote
+        if (/^>\s?/.test(line)) {
+          if (!inBlockquote) { html += "<blockquote>"; inBlockquote = true; }
+          html += inlineFormat(line.replace(/^>\s?/, "")) + "<br>";
+          continue;
+        }
+
+        // Unordered list
+        if (/^\s*[-*]\s(.+)/.test(line)) {
+          if (!inUl) { html += "<ul>"; inUl = true; }
+          html += "<li>" + inlineFormat(line.replace(/^\s*[-*]\s/, "")) + "</li>";
+          continue;
+        }
+
+        // Ordered list
+        if (/^\s*\d+\.\s(.+)/.test(line)) {
+          if (!inOl) { html += "<ol>"; inOl = true; }
+          html += "<li>" + inlineFormat(line.replace(/^\s*\d+\.\s/, "")) + "</li>";
+          continue;
+        }
+
+        // Horizontal rule
+        if (/^[-*_]{3,}\s*$/.test(line)) {
+          html += "<hr>";
+          continue;
+        }
+
+        // Regular paragraph
+        html += "<p>" + inlineFormat(line) + "</p>";
+      }
+
+      // Close any open tags
+      if (inUl) html += "</ul>";
+      if (inOl) html += "</ol>";
+      if (inBlockquote) html += "</blockquote>";
+
+      return html;
+    }
+
+    function inlineFormat(text) {
+      text = escapeHtml(text);
+      // Bold: **text**
+      text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      // Italic: *text*
+      text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
+      // Inline code: `text`
+      text = text.replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:13px">$1</code>');
+      return text;
+    }
+
+    // ── AI Deep Analysis handler ─────────────────────────────────────
+    var AI_BTN_DEFAULT = aiAnalyzeBtn.innerHTML;
+
+    aiAnalyzeBtn.addEventListener("click", async function() {
+      var text = textarea.value.trim();
+      if (!text) return;
+
+      aiAnalyzeBtn.disabled = true;
+      aiAnalyzeBtn.innerHTML =
+        '<div class="ai-spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin:0"></div> Analyzing\u2026';
+
+      aiResultsPanel.style.display = "block";
+      aiResultsContent.innerHTML =
+        '<div class="ai-loading">' +
+        '  <div class="ai-spinner"></div>' +
+        '  <p>Claude is analyzing your lease&hellip; this may take a moment.</p>' +
+        '</div>';
+      aiResultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      try {
+        var resp = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text }),
+        });
+
+        var data = await resp.json();
+
+        if (!resp.ok || data.error) {
+          aiResultsContent.innerHTML =
+            '<div class="ai-error">' + escapeHtml(data.error || "An unexpected error occurred.") + '</div>';
+        } else {
+          aiResultsContent.innerHTML =
+            '<div class="ai-response">' + renderMarkdown(data.analysis) + '</div>';
+        }
+      } catch (err) {
+        aiResultsContent.innerHTML =
+          '<div class="ai-error">Could not reach the server. Make sure the LeaseGuard server is running (npm start).</div>';
+      }
+
+      aiAnalyzeBtn.disabled = false;
+      aiAnalyzeBtn.innerHTML = AI_BTN_DEFAULT;
+      aiResultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  </script>
+
+</body>
+</html>

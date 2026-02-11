@@ -61,6 +61,28 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | 9 | Early termination penalty exceeding 2 months' rent | Medium |
 | 10 | Landlord can change terms with less than 30 days' notice | High |
 
+## Deploy to Vercel
+
+1. Install the [Vercel CLI](https://vercel.com/docs/cli):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. Deploy:
+   ```bash
+   vercel
+   ```
+
+3. Set your API key in the Vercel dashboard under **Settings > Environment Variables**:
+   ```
+   ANTHROPIC_API_KEY=your-api-key-here
+   ```
+
+4. Redeploy for the env var to take effect:
+   ```bash
+   vercel --prod
+   ```
+
 ## Tech Stack
 
 - **Frontend** — HTML, CSS, JavaScript (single-page, no build step)
